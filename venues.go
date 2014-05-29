@@ -27,23 +27,24 @@ func NewFSVenuesClient(id, secret string) FSClient {
 	}
 }
 
-func (c *FSClient) GetVenues(params map[string]string) (interface{}, error) {
-	return c.dispatchRequest(params, "search?")
+type Venue struct {
+  Id string `json:"id"`
 }
 
-func (c *FSClient) GetCategories(params map[string]string) (interface{}, error) {
-	return c.dispatchRequest(params, "/categories/")
+type ResponseBody struct {
+  Venues []Venue `json:"response"`
 }
 
-func (c *FSClient) ExploreVenues(params map[string]string) (interface{}, error) {
-	return c.dispatchRequest(params, "/explore/")
+func (c *FSClient) GetVenues(params map[string]string) ([]Venue, error) {
+  responseBody, err := c.dispatchRequest(params, "search?")
+  if err != nil {
+    fmt.Errorf("Problem")
+  }
+  fmt.Println(responseBody)
+  return responseBody.Venues, nil
 }
 
-func (c *FSClient) GetVenue(params map[string]string) (interface{}, error) {
-	return c.dispatchRequest(params, "")
-}
-
-func (c *FSClient) dispatchRequest(params map[string]string, endpoint string) (interface{}, error) {
+func (c *FSClient) dispatchRequest(params map[string]string, endpoint string) (*ResponseBody, error) {
 	var reqUrl bytes.Buffer
 	reqUrl.WriteString(c.apiUrl + endpoint)
 	values := url.Values{}
@@ -58,9 +59,9 @@ func (c *FSClient) dispatchRequest(params map[string]string, endpoint string) (i
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode >= 200 && r.StatusCode <= 400 && e == nil {
-		var jsonResult interface{}
+		var jsonResult ResponseBody
 		json.Unmarshal(body, &jsonResult)
-		return jsonResult, nil
+		return &jsonResult, nil
 	} else {
 		return nil, fmt.Errorf("venues.go: code:%d error:%v body:%s", r.StatusCode, e, body)
 	}
